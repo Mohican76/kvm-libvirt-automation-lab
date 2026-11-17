@@ -1,0 +1,20 @@
+# Ansible runtime artifacts
+*.retry
+ansible/inventory.ini
+
+# Python
+__pycache__/
+*.py[cod]
+*.py.save*
+*.py.bak
+
+# VM disk images
+*.qcow2
+*.raw
+*.iso
+images/
+
+# Editor / OS
+.vscode/
+*.swp
+.DS_Store

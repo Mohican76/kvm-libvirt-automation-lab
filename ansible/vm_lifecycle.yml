@@ -1,0 +1,22 @@
+---
+- name: Manage VM lifecycle via libvirt on the host
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Ensure default network is active
+      community.libvirt.virt_net:
+        name: default
+        command: start
+        autostart: true
+
+    - name: Ensure lab-clone2 is running
+      community.libvirt.virt:
+        name: lab-clone2
+        state: running
+      register: vm
+
+    - name: Show VM state
+      debug:
+        msg: "lab-clone2 changed={{ vm.changed }}"

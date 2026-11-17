@@ -1,0 +1,8 @@
+# Copy this file to inventory.ini and fill in real values.
+# inventory.ini is gitignored and must never be committed.
+
+[lab]
+lab-vm ansible_host=192.168.122.XXX ansible_password=<REPLACE_ME>
+
+[lab:vars]
+ansible_python_interpreter=/usr/bin/python3

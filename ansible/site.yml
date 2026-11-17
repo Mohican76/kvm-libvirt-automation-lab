@@ -1,0 +1,27 @@
+---
+- name: Baseline configuration for lab VMs
+  hosts: lab
+  become: true
+
+  tasks:
+    - name: Ensure base packages are installed
+      apt:
+        name:
+          - vim
+          - htop
+          - curl
+          - tmux
+        state: present
+        cache_valid_time:  3600
+
+    - name: Write /etc/motd banner
+      copy:
+        content: "This VM is managed by Ansible.\n"
+        dest: /etc/motd
+        mode: '0644'
+
+    - name: Ensure SSH service is running
+      service:
+        name: ssh
+        state: started
+        enabled: true

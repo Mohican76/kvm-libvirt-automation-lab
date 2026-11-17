@@ -1,0 +1,96 @@
+---
+- name: Provision a new Debian VM on libvirt
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: false
+
+  vars:
+    vm_name: ansible-vm
+    vm_memory_mb: 512
+    vm_vcpus: 2
+    disk_path: "/var/lib/libvirt/images/{{ vm_name }}.qcow2"
+    base_image: "/var/lib/libvirt/images/debian-12-genericcloud-amd64.qcow2"
+    network_cfg: "/etc/systemd/network/20-dhcp.network"
+
+  tasks:
+    - name: Remove any existing {{ vm_name }} domain
+      community.libvirt.virt:
+        name: "{{ vm_name }}"
+        command: undefine
+      ignore_errors: true
+
+    - name: Remove any existing {{ vm_name }} disk
+      file:
+        path: "{{ disk_path }}"
+        state: absent
+
+    - name: Create CoW disk from base image
+      command: >
+        qemu-img create -f qcow2 -F qcow2
+        -b {{ base_image }} {{ disk_path }} 20G
+      args:
+        creates: "{{ disk_path }}"
+
+    - name: Write DHCP network config to temp file
+      copy:
+        dest: /tmp/dhcp.network
+        content: |
+          [Match]
+          Name=en*
+          [Network]
+          DHCP=yes
+
+    - name: Patch network config into clone via guestfish
+      shell: |
+        guestfish --rw -a {{ disk_path }} <<'GF'
+        run
+        mount /dev/sda1 /
+        upload /tmp/dhcp.network {{ network_cfg }}
+        umount-all
+        GF
+      args:
+        executable: /bin/bash
+
+    - name: Define {{ vm_name }} domain
+      community.libvirt.virt:
+        name: "{{ vm_name }}"
+        command: define
+        xml: |
+          <domain type='kvm'>
+            <name>{{ vm_name }}</name>
+            <memory unit='MiB'>{{ vm_memory_mb }}</memory>
+            <vcpu>{{ vm_vcpus }}</vcpu>
+            <os><type arch='x86_64'>hvm</type><boot dev='hd'/></os>
+            <features><acpi/><apic/></features>
+            <cpu mode='host-passthrough'/>
+            <devices>
+              <disk type='file' device='disk'>
+                <driver name='qemu' type='qcow2'/>
+                <source file='{{ disk_path }}'/>
+                <target dev='vda' bus='virtio'/>
+              </disk>
+              <interface type='network'>
+                <source network='default'/>
+                <model type='virtio'/>
+              </interface>
+              <serial type='pty'/>
+              <console type='pty'/>
+            </devices>
+          </domain>
+
+    - name: Start {{ vm_name }}
+      community.libvirt.virt:
+        name: "{{ vm_name }}"
+        state: running
+
+    - name: Wait for {{ vm_name }} to get an IP
+      shell: virsh domifaddr {{ vm_name }} | grep -oE '192\.168\.122\.[0-9]+' | head -1
+      register: ip_result
+      until: ip_result.stdout | length > 0
+      retries: 40
+      delay: 3
+
+    - name: Show SSH command
+      debug:
+        msg: "ssh debian@{{ ip_result.stdout }}   password: debian"
