@@ -115,3 +115,14 @@ Expected:
 KVM, QEMU, libvirt, virsh, guestfish, cloud-init, qcow2/CoW,
 VirtIO, systemd-networkd, DHCP/NAT, Python (libvirt bindings),
 Ansible (playbooks, idempotency, community.libvirt), Bash.
+
+---
+
+## SSH key authentication
+
+Lab uses ED25519 keys, not passwords.
+
+    ssh-keygen -t ed25519 -f ~/.ssh/lab_key
+    ssh-copy-id -i ~/.ssh/lab_key.pub debian@192.168.122.205
+
+Ansible inventory uses ansible_ssh_private_key_file instead of ansible_password. inventory.ini is gitignored.
