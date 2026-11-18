@@ -5,23 +5,23 @@
 
   tasks:
     - name: Ensure base packages are installed
-      apt:
+      ansible.builtin.apt:
         name:
           - vim
           - htop
           - curl
           - tmux
         state: present
-        cache_valid_time:  3600
+        cache_valid_time: 3600
 
     - name: Write /etc/motd banner
-      copy:
+      ansible.builtin.copy:
         content: "This VM is managed by Ansible.\n"
         dest: /etc/motd
         mode: '0644'
 
     - name: Ensure SSH service is running
-      service:
+      ansible.builtin.service:
         name: ssh
         state: started
         enabled: true

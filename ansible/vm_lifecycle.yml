@@ -18,5 +18,5 @@
       register: vm
 
     - name: Show VM state
-      debug:
+      ansible.builtin.debug:
         msg: "lab-clone2 changed={{ vm.changed }}"

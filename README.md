@@ -152,3 +152,17 @@ Refactored from destroy-and-rebuild to check-then-act convergence:
 The playbook checks for the domain first, sets a `vm_exists` fact, and
 guards all destructive tasks with `when: not vm_exists`. Read-only
 probes use `changed_when: false` so they never report spurious changes.
+
+---
+
+## Code quality: ansible-lint
+
+All playbooks pass ansible-lint at the production profile:
+
+    Passed: 0 failure(s), 0 warning(s) on 3 files.
+    Last profile that met the validation criteria was production.
+
+Fixes applied to reach this: FQCN prefixes on all builtin modules,
+explicit file modes on copy tasks, changed_when/failed_when on
+command and shell tasks, pipefail on piped shell commands, and
+Jinja templates moved to the end of task names.

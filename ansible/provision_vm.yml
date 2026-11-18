@@ -14,47 +14,48 @@
     network_cfg: "/etc/systemd/network/20-dhcp.network"
 
   tasks:
-    - name: Check if {{ vm_name }} exists
-      command: virsh domstate {{ vm_name }}
+    - name: Check existence of {{ vm_name }}
+      ansible.builtin.command: virsh domstate {{ vm_name }}
       register: vm_check
       failed_when: false
       changed_when: false
 
     - name: Set existence fact
-      set_fact:
+      ansible.builtin.set_fact:
         vm_exists: "{{ vm_check.rc == 0 }}"
 
-    - name: Remove any existing {{ vm_name }} domain
+    - name: Remove existing domain for {{ vm_name }}
       community.libvirt.virt:
         name: "{{ vm_name }}"
         command: undefine
-      ignore_errors: true
+      failed_when: false
       when: not vm_exists
 
-    - name: Remove any existing {{ vm_name }} disk
-      file:
+    - name: Remove existing disk for {{ vm_name }}
+      ansible.builtin.file:
         path: "{{ disk_path }}"
         state: absent
       when: not vm_exists
 
     - name: Create CoW disk from base image
-      command: >
+      ansible.builtin.command: >
         qemu-img create -f qcow2 -F qcow2
         -b {{ base_image }} {{ disk_path }} 20G
       args:
         creates: "{{ disk_path }}"
 
     - name: Write DHCP network config to temp file
-      copy:
+      ansible.builtin.copy:
         dest: /tmp/dhcp.network
         content: |
           [Match]
           Name=en*
           [Network]
           DHCP=yes
+        mode: '0644'
 
     - name: Patch network config into clone via guestfish
-      shell: |
+      ansible.builtin.shell: |
         guestfish --rw -a {{ disk_path }} <<'GF'
         run
         mount /dev/sda1 /
@@ -63,9 +64,10 @@
         GF
       args:
         executable: /bin/bash
+      changed_when: true
       when: not vm_exists
 
-    - name: Define {{ vm_name }} domain
+    - name: Define domain {{ vm_name }}
       community.libvirt.virt:
         name: "{{ vm_name }}"
         command: define
@@ -98,8 +100,10 @@
         name: "{{ vm_name }}"
         state: running
 
-    - name: Wait for {{ vm_name }} to get an IP
-      shell: virsh domifaddr {{ vm_name }} | grep -oE '192\.168\.122\.[0-9]+' | head -1
+    - name: Wait for IP on {{ vm_name }}
+      ansible.builtin.shell: |
+        set -o pipefail
+        virsh domifaddr {{ vm_name }} | grep -oE '192\.168\.122\.[0-9]+' | head -1
       register: ip_result
       until: ip_result.stdout | length > 0
       retries: 40
@@ -107,5 +111,5 @@
       changed_when: false
 
     - name: Show SSH command
-      debug:
+      ansible.builtin.debug:
         msg: "ssh debian@{{ ip_result.stdout }}   password: debian"
