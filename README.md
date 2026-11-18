@@ -126,3 +126,16 @@ Lab uses ED25519 keys, not passwords.
     ssh-copy-id -i ~/.ssh/lab_key.pub debian@192.168.122.205
 
 Ansible inventory uses ansible_ssh_private_key_file instead of ansible_password. inventory.ini is gitignored.
+
+---
+
+## Idempotency demo (vm_lifecycle.yml)
+
+Same playbook, run twice against lab-clone2:
+
+    Run 1  (lab-clone2 off)     -> changed=1   (Ansible started the VM)
+    Run 2  (lab-clone2 running) -> changed=0   (already in desired state, no-op)
+
+This is the check-then-act reconciliation pattern: the playbook describes
+desired state, and Ansible makes changes only when necessary. Safe to run
+repeatedly in cron, CI, or a deployment pipeline.
