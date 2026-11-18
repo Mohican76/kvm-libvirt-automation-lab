@@ -14,16 +14,28 @@
     network_cfg: "/etc/systemd/network/20-dhcp.network"
 
   tasks:
+    - name: Check if {{ vm_name }} exists
+      command: virsh domstate {{ vm_name }}
+      register: vm_check
+      failed_when: false
+      changed_when: false
+
+    - name: Set existence fact
+      set_fact:
+        vm_exists: "{{ vm_check.rc == 0 }}"
+
     - name: Remove any existing {{ vm_name }} domain
       community.libvirt.virt:
         name: "{{ vm_name }}"
         command: undefine
       ignore_errors: true
+      when: not vm_exists
 
     - name: Remove any existing {{ vm_name }} disk
       file:
         path: "{{ disk_path }}"
         state: absent
+      when: not vm_exists
 
     - name: Create CoW disk from base image
       command: >
@@ -51,6 +63,7 @@
         GF
       args:
         executable: /bin/bash
+      when: not vm_exists
 
     - name: Define {{ vm_name }} domain
       community.libvirt.virt:
@@ -78,6 +91,7 @@
               <console type='pty'/>
             </devices>
           </domain>
+      when: not vm_exists
 
     - name: Start {{ vm_name }}
       community.libvirt.virt:
@@ -90,6 +104,7 @@
       until: ip_result.stdout | length > 0
       retries: 40
       delay: 3
+      changed_when: false
 
     - name: Show SSH command
       debug:

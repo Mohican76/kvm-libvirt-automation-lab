@@ -139,3 +139,16 @@ Same playbook, run twice against lab-clone2:
 This is the check-then-act reconciliation pattern: the playbook describes
 desired state, and Ansible makes changes only when necessary. Safe to run
 repeatedly in cron, CI, or a deployment pipeline.
+
+---
+
+## Idempotent provisioner (provision_vm.yml)
+
+Refactored from destroy-and-rebuild to check-then-act convergence:
+
+    Run 1  (ansible-vm missing) -> changed=5-6  (provisions the VM)
+    Run 2  (ansible-vm running) -> changed=0    (skips 4 tasks, no-ops the rest)
+
+The playbook checks for the domain first, sets a `vm_exists` fact, and
+guards all destructive tasks with `when: not vm_exists`. Read-only
+probes use `changed_when: false` so they never report spurious changes.
