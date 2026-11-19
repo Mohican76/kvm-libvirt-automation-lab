@@ -1,5 +1,7 @@
 # KVM / libvirt Automation Lab
 
+[![ansible-lint](https://github.com/Mohican76/kvm-libvirt-automation-lab/actions/workflows/ansible-lint.yml/badge.svg)](https://github.com/Mohican76/kvm-libvirt-automation-lab/actions/workflows/ansible-lint.yml)
+
 Hands-on lab work building and automating Linux virtual machines with
 KVM/QEMU and libvirt, developed on a memory-constrained Chromebook
 (Crostini) rather than a dedicated server.
